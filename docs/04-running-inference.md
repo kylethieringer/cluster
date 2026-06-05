@@ -1,6 +1,7 @@
 # 04 · Running parallel inference
 
-This runs SLEAP inference on every video in a folder, **one SLURM job per video**, in parallel.
+This runs SLEAP inference on every video across your experiments, **one SLURM job per video**,
+in parallel. Videos are organized one experiment per folder: `RAW_DIR/<exptID>/<video>.mp4`.
 
 ## How it works
 
@@ -10,7 +11,7 @@ submit_inference.sh ──> finds videos, skips done ones ──> writes a manif
 
            SLURM array:  task 1 → video 1     task 2 → video 2     ... (run in parallel)
                          each: apptainer exec --nv $SLEAP_SIF  sleap-nn track ...
-                         each writes  OUTPUT_DIR/<video>.predictions.slp
+                         each writes  PROCESSED_DIR/<exptID>/<video>.predictions.slp
 ```
 
 Each array task picks its video by `SLURM_ARRAY_TASK_ID` and runs the inference command from
@@ -25,7 +26,8 @@ Edit [`config/inference.config.sh`](../config/inference.config.sh) (or copy it t
 - `SLEAP_SIF` — the image from [03-sleap-apptainer.md](03-sleap-apptainer.md).
 - `MODEL_PATHS` — your trained model(s). Top-down = centroid **and** centered-instance; single-
   instance/bottom-up = one entry.
-- `VIDEO_DIR`, `VIDEO_GLOB`, `OUTPUT_DIR` — input/output locations.
+- `DATA_ROOT`, `RAW_DIR`, `VIDEO_GLOB`, `PROCESSED_DIR` — input/output locations. Videos are read
+  from `RAW_DIR/<exptID>/*.mp4`; outputs are written to `PROCESSED_DIR/<exptID>/`.
 - `EXTRA_TRACK_ARGS` — keep `--tracking` to track across frames; clear it for per-frame only.
 
 ## 2. Dry run first
@@ -44,8 +46,9 @@ right.
 ./scripts/submit_inference.sh
 ```
 
-It prints the submitted job ID. By default, videos whose `OUTPUT_DIR/<name>.predictions.slp`
-already exists are **skipped** — so re-running only processes what's left (handy after
+It prints the submitted job ID. By default, videos whose
+`PROCESSED_DIR/<exptID>/<name>.predictions.slp` already exists are **skipped** — so re-running
+only processes what's left (handy after
 preemption on `ckpt-all`). Use `--force` to reprocess everything.
 
 ## 4. Monitor
@@ -62,7 +65,7 @@ Per-task logs are in `logs/`:
 
 ## 5. Collect outputs
 
-Results are one `.slp` per video in `OUTPUT_DIR`. Open them in the SLEAP GUI, or copy them back
+Results are one `.slp` per video under `PROCESSED_DIR/<exptID>/`. Open them in the SLEAP GUI, or copy them back
 to your machine (see [02-storage-and-data.md](02-storage-and-data.md)).
 
 ## Tuning notes

@@ -15,7 +15,7 @@
 # Find your account(s) with:   groups          (lab accounts you belong to)
 # See partitions/GPUs with:    sinfo -s        and   hyakalloc
 # Docs: https://hyak.uw.edu/docs/compute/scheduling-jobs
-ACCOUNT="CHANGE_ME"                  # e.g. "stf" or your lab's account (-A)
+ACCOUNT="psych"                      # e.g. "stf" or your lab's account (-A)
 PARTITION="ckpt-all"                 # GPU partition, e.g. gpu-a100 / gpu-l40s.
                                      # "ckpt-all" = free idle GPUs (preemptible).
 
@@ -65,7 +65,12 @@ EXTRA_TRACK_ARGS="--tracking"
 # -----------------------------------------------------------------------------
 # Data layout -- where videos come from and where outputs go.
 # -----------------------------------------------------------------------------
-VIDEO_DIR="/gscratch/CHANGE_ME/videos"   # folder containing input videos
+# Experiments live one folder deep: each has its own subdirectory holding its
+# video(s). Inputs are read from   RAW_DIR/<exptID>/*.mp4   and the prediction
+# for each video is written to     PROCESSED_DIR/<exptID>/<video>.predictions.slp
+# (the per-experiment subfolder is mirrored into PROCESSED_DIR).
+DATA_ROOT="/gscratch/scrubbed/kthier/data"   # parent of raw/ and processed/
+RAW_DIR="$DATA_ROOT/raw"                  # one subfolder per experiment
 VIDEO_GLOB="*.mp4"                        # which files to treat as videos
-OUTPUT_DIR="/gscratch/CHANGE_ME/predictions"  # one .slp written per video
+PROCESSED_DIR="$DATA_ROOT/processed"      # outputs, grouped by experiment
 LOG_DIR="${LOG_DIR:-$PWD/logs}"           # SLURM logs + manifests land here

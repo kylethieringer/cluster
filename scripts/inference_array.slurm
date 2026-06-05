@@ -20,9 +20,8 @@ VIDEO="$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$MANIFEST")"
 [[ -n "$VIDEO" ]] || die "no video on manifest line ${SLURM_ARRAY_TASK_ID} of $MANIFEST"
 [[ -f "$VIDEO" ]] || die "video not found: $VIDEO"
 
-mkdir -p "$OUTPUT_DIR"
-base="$(basename "$VIDEO")"
-OUT="$OUTPUT_DIR/${base%.*}.predictions.slp"
+OUT="$(out_path_for "$VIDEO")"
+mkdir -p "$(dirname "$OUT")"
 
 echo "=== task ${SLURM_ARRAY_TASK_ID} on $(hostname) at $(date) ==="
 echo "video : $VIDEO"
@@ -48,7 +47,7 @@ done
 
 # Bind data locations into the container (gscratch is usually auto-mounted, but
 # bind explicitly to be safe). Collect unique existing directories.
-bind_dirs=("$VIDEO_DIR" "$OUTPUT_DIR")
+bind_dirs=("$RAW_DIR" "$PROCESSED_DIR")
 for m in "${MODEL_PATHS[@]}"; do
     bind_dirs+=("$(dirname "$m")")
 done

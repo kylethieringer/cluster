@@ -55,12 +55,12 @@ docs/                         # setup + usage guides
 
 ## How it works
 
-`submit_inference.sh` lists the videos in `VIDEO_DIR`, skips any whose `.slp` output already
-exists, writes the rest to a manifest, and submits a SLURM **job array** sized to that list.
-Each array task selects its video by `SLURM_ARRAY_TASK_ID` and runs
+`submit_inference.sh` lists the videos across experiments (`RAW_DIR/<exptID>/*.mp4`), skips any
+whose `.slp` output already exists, writes the rest to a manifest, and submits a SLURM **job
+array** sized to that list. Each array task selects its video by `SLURM_ARRAY_TASK_ID` and runs
 `apptainer exec --nv $SLEAP_SIF sleap-nn track ...`, writing one `.slp` per video into
-`OUTPUT_DIR`. Re-running resumes where it left off — useful on the preemptible `ckpt-all`
-partition.
+`PROCESSED_DIR/<exptID>/`. Re-running resumes where it left off — useful on the preemptible
+`ckpt-all` partition.
 
 ## Status / caveats
 

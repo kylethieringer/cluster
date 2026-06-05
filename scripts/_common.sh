@@ -37,3 +37,14 @@ die() {
     echo "ERROR: $*" >&2
     exit 1
 }
+
+# Map a raw video path to its output .slp path. Videos live one folder deep
+# (RAW_DIR/<exptID>/<name>.mp4); the experiment subfolder is mirrored under
+# PROCESSED_DIR, so the output is PROCESSED_DIR/<exptID>/<name>.predictions.slp.
+# Requires PROCESSED_DIR to be set (sourced from the config).
+out_path_for() {
+    local video="$1" exptid base
+    exptid="$(basename "$(dirname "$video")")"
+    base="$(basename "$video")"
+    printf '%s/%s/%s.predictions.slp' "$PROCESSED_DIR" "$exptid" "${base%.*}"
+}

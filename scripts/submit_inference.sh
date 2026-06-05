@@ -31,7 +31,7 @@ load_config "$CONFIG_ARG"
 
 # --- validation -------------------------------------------------------------
 [[ "$ACCOUNT" != "CHANGE_ME" ]] || die "set ACCOUNT in $CONFIG_FILE (see 'groups')"
-[[ -d "$VIDEO_DIR" ]] || die "VIDEO_DIR does not exist: $VIDEO_DIR"
+[[ -d "$RAW_DIR" ]] || die "RAW_DIR does not exist: $RAW_DIR"
 for m in "${MODEL_PATHS[@]}"; do
     [[ -e "$m" ]] || die "model path does not exist: $m"
 done
@@ -44,16 +44,17 @@ if [[ ! -f "$SLEAP_SIF" ]]; then
 fi
 
 # --- enumerate videos, skipping already-done ones ---------------------------
+# Videos live one folder deep: RAW_DIR/<exptID>/<video>. Glob across all
+# experiment subdirectories.
 shopt -s nullglob
-all_videos=("$VIDEO_DIR"/$VIDEO_GLOB)
+all_videos=("$RAW_DIR"/*/$VIDEO_GLOB)
 shopt -u nullglob
-[[ ${#all_videos[@]} -gt 0 ]] || die "no videos matching $VIDEO_GLOB in $VIDEO_DIR"
+[[ ${#all_videos[@]} -gt 0 ]] || die "no videos matching $RAW_DIR/*/$VIDEO_GLOB"
 
 todo_videos=()
 skipped=0
 for v in "${all_videos[@]}"; do
-    base="$(basename "$v")"
-    out="$OUTPUT_DIR/${base%.*}.predictions.slp"
+    out="$(out_path_for "$v")"
     if [[ "$FORCE" -ne 1 && -s "$out" ]]; then
         skipped=$((skipped + 1))
         continue
