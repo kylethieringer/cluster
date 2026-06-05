@@ -1,5 +1,7 @@
 Bootstrap: docker
-From: nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+# Ubuntu 24.04 -> Python 3.12. Modern SLEAP (1.5+/1.6+) requires Python
+# >=3.11,<3.14, so the 22.04 base (Python 3.10) cannot install sleap[nn].
+From: nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 # =============================================================================
 # Apptainer definition for modern SLEAP (PyTorch / sleap-nn backend).
@@ -32,18 +34,23 @@ From: nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
         git ca-certificates curl
     rm -rf /var/lib/apt/lists/*
 
-    python3 -m pip install --no-cache-dir --upgrade pip
+    # Install into a venv (not system Python). Ubuntu 24.04 marks the system
+    # interpreter externally-managed (PEP 668), so system-wide pip is blocked;
+    # a venv sidesteps that and the "pip as root" warning.
+    python3 -m venv /opt/venv
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip
 
     # Install a pinned SLEAP with the PyTorch (sleap-nn) backend.
     # The CUDA torch wheels come from PyTorch's cu12x index.
-    python3 -m pip install --no-cache-dir \
+    /opt/venv/bin/pip install --no-cache-dir \
         --extra-index-url https://download.pytorch.org/whl/cu128 \
         "sleap[nn]=={{ SLEAP_VERSION }}"
 
     # Smoke-check the CLIs exist at build time (no GPU needed here).
-    sleap-nn --help >/dev/null 2>&1 || echo "WARN: 'sleap-nn' CLI not found; check version/extras"
+    /opt/venv/bin/sleap-nn --help >/dev/null 2>&1 || echo "WARN: 'sleap-nn' CLI not found; check version/extras"
 
 %environment
+    export PATH=/opt/venv/bin:$PATH
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
     # Avoid each task fighting over all cores for CPU math.
