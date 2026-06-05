@@ -1,0 +1,17 @@
+# Apptainer images (large, built on the cluster)
+*.sif
+
+# Run artifacts
+logs/
+manifests/
+
+# SLEAP prediction outputs
+*.slp
+*.predictions.slp
+
+# Local overrides
+config/*.local.sh
+
+# Python / editor cruft
+__pycache__/
+.DS_Store

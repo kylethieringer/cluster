@@ -1,0 +1,62 @@
+Bootstrap: docker
+From: nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+
+# =============================================================================
+# Apptainer definition for modern SLEAP (PyTorch / sleap-nn backend).
+#
+# Build with scripts/build_sleap_sif.sh (which passes SLEAP_VERSION). Manually:
+#   apptainer build sleap_1.6.3.sif containers/sleap.def
+#   # or pin a version:
+#   apptainer build --build-arg SLEAP_VERSION=1.6.3 sleap_1.6.3.sif containers/sleap.def
+#
+# NOTE: SLEAP's install story shifts across 1.6.x. If a build fails, check the
+# pinned version's install docs and adjust the pip line in %post:
+#   - https://docs.sleap.ai/  (installation)
+#   - https://nn.sleap.ai/    (sleap-nn / PyTorch backend, --torch-backend)
+# The CUDA base tag above should match the CUDA build of the torch that
+# sleap-nn pulls in (cu12x). Bump both together if needed.
+# =============================================================================
+
+%arguments
+    SLEAP_VERSION=1.6.3
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # System deps: Python, video I/O (ffmpeg/OpenCV runtime), git.
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv \
+        ffmpeg libgl1 libglib2.0-0 \
+        git ca-certificates curl
+    rm -rf /var/lib/apt/lists/*
+
+    python3 -m pip install --no-cache-dir --upgrade pip
+
+    # Install a pinned SLEAP with the PyTorch (sleap-nn) backend.
+    # The CUDA torch wheels come from PyTorch's cu12x index.
+    python3 -m pip install --no-cache-dir \
+        --extra-index-url https://download.pytorch.org/whl/cu128 \
+        "sleap[nn]=={{ SLEAP_VERSION }}"
+
+    # Smoke-check the CLIs exist at build time (no GPU needed here).
+    sleap-nn --help >/dev/null 2>&1 || echo "WARN: 'sleap-nn' CLI not found; check version/extras"
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    # Avoid each task fighting over all cores for CPU math.
+    export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
+
+%labels
+    Maintainer kylethieringer@gmail.com
+    Description SLEAP (PyTorch/sleap-nn) inference for Hyak
+    SLEAP_Version {{ SLEAP_VERSION }}
+
+%help
+    Apptainer image for running modern SLEAP (sleap-nn) inference on Hyak.
+    Run with GPU passthrough using --nv, e.g.:
+        apptainer exec --nv sleap_1.6.3.sif sleap-nn track -i video.mp4 -m model/ -o out.slp
+    Verify GPU access:
+        apptainer exec --nv sleap_1.6.3.sif python3 -c "import torch; print(torch.cuda.is_available())"
