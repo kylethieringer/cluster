@@ -12,7 +12,8 @@ version-pinned **Apptainer** container.
 Assuming you already have a Hyak account and your data is on the cluster:
 
 ```bash
-git clone <this-repo> && cd cluster
+git clone https://github.com/kylethieringer/cluster.git && cd cluster
+# (auth/SSH-key setup: docs/01-getting-started.md §5)
 
 # 1. Configure (account, partition, model paths, video/output dirs, ...)
 $EDITOR config/inference.config.sh

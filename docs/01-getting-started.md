@@ -52,6 +52,61 @@ for free but jobs can be **preempted** (interrupted and requeued). Scheduling do
 
 Put the account and partition you choose into [`config/inference.config.sh`](../config/inference.config.sh).
 
+## 5. Get this repo onto the cluster
+
+Clone into your group's `gscratch` space (not your small home directory):
+
+```bash
+cd /gscratch/<group>/<UWNetID>
+```
+
+If the repo is **public**, you can clone read-only with no setup:
+
+```bash
+git clone https://github.com/kylethieringer/cluster.git
+```
+
+To push changes back, you need to authenticate. Pick one of the two options below.
+
+### Option A — SSH key (recommended for ongoing work)
+
+Generate a key **on the cluster** (this is separate from any key you use to log into Hyak),
+then add the public half to GitHub.
+
+```bash
+# 1. Generate a key (press Enter through the prompts to accept defaults)
+ssh-keygen -t ed25519 -C "<your-github-email>"
+
+# 2. Print the PUBLIC key and copy the whole line
+cat ~/.ssh/id_ed25519.pub
+```
+
+Add it on GitHub: **Settings → SSH and GPG keys → New SSH key**, paste the public key, save.
+Then test and clone over SSH:
+
+```bash
+ssh -T git@github.com            # should greet you by username
+git clone git@github.com:kylethieringer/cluster.git
+```
+
+> Never share or paste the **private** key (`~/.ssh/id_ed25519`, no `.pub`). Only the `.pub`
+> file goes to GitHub.
+
+### Option B — HTTPS + Personal Access Token
+
+If you'd rather not use keys, clone over HTTPS and authenticate with a **Personal Access
+Token** (GitHub no longer accepts your account password). Create one at **Settings → Developer
+settings → Personal access tokens** with `repo` (or fine-grained Contents) scope, then:
+
+```bash
+git clone https://github.com/kylethieringer/cluster.git
+# Username: your GitHub username
+# Password: paste the token (not your GitHub password)
+
+# Optional: cache it so you don't re-enter it each time
+git config --global credential.helper 'cache --timeout=3600'
+```
+
 ## Next
 
 → [02-storage-and-data.md](02-storage-and-data.md): where to put videos, models, and outputs,

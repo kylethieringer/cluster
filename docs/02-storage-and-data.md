@@ -11,7 +11,7 @@ SLEAP model(s)**, and a place for **outputs**. Official storage docs:
 | Videos | `/gscratch/<group>/.../videos` | Large, fast scratch storage. |
 | Model(s) | `/gscratch/<group>/.../models` | One dir per model (centroid, centered_instance, …). |
 | Outputs (`.slp`) | `/gscratch/<group>/.../predictions` | One `.slp` per video. |
-| This repo | `~/` or `/gscratch/<group>/<you>` | Clone it wherever you like. |
+| This repo | `/gscratch/<group>/<you>` | Clone here (not home). See [01 · §5](01-getting-started.md#5-get-this-repo-onto-the-cluster). |
 
 **`gscratch`** is the high-performance shared filesystem for active work. It is **not backed
 up** and may have purge policies — keep originals elsewhere and archive results you care about
