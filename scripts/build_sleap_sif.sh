@@ -34,9 +34,29 @@ if [[ -f "$SLEAP_SIF" && "$FORCE" -ne 1 ]]; then
 fi
 
 mkdir -p "$(dirname "$SLEAP_SIF")"
+
+# Apptainer extracts the multi-GB torch/CUDA wheel set into its scratch dir
+# during %post. On Hyak, /tmp is often tmpfs (RAM-backed), so the default
+# TMPDIR fills memory and the build is OOM-killed (exit 137 / "Killed"). Point
+# Apptainer's tmp + cache at disk next to the output .sif unless the caller has
+# already set them. Override by exporting APPTAINER_TMPDIR/APPTAINER_CACHEDIR.
+SIF_DIR="$(dirname "$SLEAP_SIF")"
+export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-$SIF_DIR/.apptainer-build/tmp}"
+export APPTAINER_CACHEDIR="${APPTAINER_CACHEDIR:-$SIF_DIR/.apptainer-build/cache}"
+# Singularity-named fallbacks in case the runtime is the singularity binary.
+export SINGULARITY_TMPDIR="${SINGULARITY_TMPDIR:-$APPTAINER_TMPDIR}"
+export SINGULARITY_CACHEDIR="${SINGULARITY_CACHEDIR:-$APPTAINER_CACHEDIR}"
+mkdir -p "$APPTAINER_TMPDIR" "$APPTAINER_CACHEDIR"
+
 echo "Building $SLEAP_SIF"
 echo "  from:    $DEF_FILE"
 echo "  version: SLEAP $SLEAP_VERSION"
+echo "  tmpdir:  $APPTAINER_TMPDIR"
+echo "  cache:   $APPTAINER_CACHEDIR"
+echo
+echo "NOTE: this build is memory-heavy. Run it inside an allocation with ample"
+echo "RAM (e.g. salloc -A $ACCOUNT -p $PARTITION -c 4 --mem 48G -t 02:00:00),"
+echo "not on a login node, or it will be OOM-killed (exit 137)."
 "$APPTAINER" build --build-arg "SLEAP_VERSION=${SLEAP_VERSION}" "$SLEAP_SIF" "$DEF_FILE"
 
 cat <<EOF

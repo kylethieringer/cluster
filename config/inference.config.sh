@@ -39,8 +39,11 @@ MAX_CONCURRENT=20
 # Pinned SLEAP version baked into the .sif (see containers/sleap.def).
 SLEAP_VERSION="1.6.3"
 
-# Path to the built Apptainer image (see scripts/build_sleap_sif.sh).
-SLEAP_SIF="${SLEAP_SIF:-$HOME/sleap_${SLEAP_VERSION}.sif}"
+# Path to the built Apptainer image (see scripts/build_sleap_sif.sh). Kept on
+# /gscratch (not $HOME): the image is several GB and the build's scratch dir
+# defaults to sit next to it, which would blow the tight home quota. The build
+# scratch follows this dir automatically, so no separate APPTAINER_TMPDIR needed.
+SLEAP_SIF="${SLEAP_SIF:-/gscratch/psych/kthier/sleap_${SLEAP_VERSION}.sif}"
 
 # Trained model(s). For a top-down model, list BOTH the centroid and the
 # centered-instance model. For single-instance/bottom-up, list just one.
