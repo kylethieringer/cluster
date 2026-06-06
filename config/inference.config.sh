@@ -49,8 +49,8 @@ SLEAP_SIF="${SLEAP_SIF:-/gscratch/psych/kthier/sleap_${SLEAP_VERSION}.sif}"
 # centered-instance model. For single-instance/bottom-up, list just one.
 # Each entry may be a model directory, a best.ckpt, or a training_config.yaml.
 MODEL_PATHS=(
-  "/gscratch/CHANGE_ME/models/centroid"
-  "/gscratch/CHANGE_ME/models/centered_instance"
+  "/gscratch/psych/kthier/models/centroid"
+  "/gscratch/psych/kthier/models/centered_instance"
 )
 
 # Inference device passed to sleap-nn (cuda, cuda:0, cpu, ...).
