@@ -32,6 +32,22 @@ squeue --me
 
 New to Hyak? Start at [docs/01-getting-started.md](docs/01-getting-started.md).
 
+## A second pipeline: motion correction (ANTsPy)
+
+The same machinery also runs **imaging motion correction** with
+[ANTsPy](https://github.com/ANTsX/ANTsPy) — **one CPU SLURM job per experiment**,
+from its own container. It's independent of SLEAP (no GPU, separate image/config):
+
+```bash
+$EDITOR config/moco.config.sh   # account, CPU resources, data paths
+./scripts/build_moco_sif.sh     # build the ANTsPy image once (clones the nre repo)
+./scripts/submit_moco.sh --dry-run
+./scripts/submit_moco.sh
+```
+
+See [docs/05-motion-correction.md](docs/05-motion-correction.md). It needs SSH
+access to the private `oahmedlab/nifty-roi-extractor` repo (the `nre` package).
+
 ## Documentation
 
 1. [Getting started](docs/01-getting-started.md) — account, login, login-vs-compute nodes,
@@ -41,15 +57,23 @@ New to Hyak? Start at [docs/01-getting-started.md](docs/01-getting-started.md).
    verifying GPU.
 4. [Running inference](docs/04-running-inference.md) — configure, dry-run, submit, monitor,
    collect outputs.
+5. [Motion correction (ANTsPy)](docs/05-motion-correction.md) — the CPU ANTsPy pipeline:
+   build, configure, dry-run, submit.
 
 ## Layout
 
 ```
-config/inference.config.sh    # the one file you edit (allocation, model, data paths)
+config/inference.config.sh    # SLEAP: the one file you edit (allocation, model, data paths)
+config/moco.config.sh         # motion correction: the one file you edit (CPU alloc, data paths)
 containers/sleap.def          # Apptainer definition for the pinned SLEAP image
-scripts/build_sleap_sif.sh    # build the .sif from the definition
-scripts/submit_inference.sh   # enumerate videos -> manifest -> submit the SLURM array
-scripts/inference_array.slurm # array job body: one task = one video
+containers/moco.def           # Apptainer definition for the ANTsPy image (bakes in the nre package)
+scripts/build_sleap_sif.sh    # build the SLEAP .sif from the definition
+scripts/build_moco_sif.sh     # clone the nre repo + build the ANTsPy .sif
+scripts/submit_inference.sh   # SLEAP: enumerate videos -> manifest -> submit the SLURM array
+scripts/inference_array.slurm # SLEAP array job body: one task = one video
+scripts/submit_moco.sh        # moco: enumerate experiments -> manifest -> submit the SLURM array
+scripts/moco_array.slurm      # moco array job body: one task = one experiment
+scripts/run_moco.py           # moco worker: motion-correct one experiment (uses nre)
 docs/                         # setup + usage guides
 ```
 

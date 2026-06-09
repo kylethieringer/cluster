@@ -1,0 +1,86 @@
+Bootstrap: docker
+# Ubuntu 24.04 -> Python 3.12. CPU-only: ANTs SyN registration does not use a
+# GPU, so (unlike containers/sleap.def) there is no CUDA base and the image runs
+# without --nv.
+From: ubuntu:24.04
+
+# =============================================================================
+# Apptainer definition for ANTsPy motion correction.
+#
+# Bakes in the Ahmed-lab `nre` package (oahmedlab/nifty-roi-extractor) plus its
+# real dependencies. The package is NOT pip-installable upstream (its setup.py is
+# an interactive scaffolding template, it has no __init__.py, and it declares no
+# dependencies), so the build script stages the repo on the host and we copy the
+# `nre/` package in via %files, turn it into a real package, and put it on
+# PYTHONPATH. Dependencies are installed explicitly below.
+#
+# Build with scripts/build_moco_sif.sh, which clones the pinned NRE_COMMIT into
+# containers/.nre-src and passes ANTSPY_VERSION. Manually:
+#   git clone git@github.com:oahmedlab/nifty-roi-extractor.git containers/.nre-src
+#   apptainer build --build-arg ANTSPY_VERSION=0.5.4 moco.sif containers/moco.def
+#
+# antspyx ships manylinux wheels per Python version -- if the pip step fails,
+# check that ANTSPY_VERSION has a cp312 wheel: https://pypi.org/project/antspyx/#files
+# =============================================================================
+
+%arguments
+    ANTSPY_VERSION=0.5.4
+
+%files
+    # Host-staged lab package (cloned at the pinned commit by build_moco_sif.sh).
+    .nre-src/nre /opt/nre
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # System deps: Python + venv tooling. No video/CUDA libs needed for ANTs.
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv \
+        git ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install into a venv (not system Python). Ubuntu 24.04 marks the system
+    # interpreter externally-managed (PEP 668), so system-wide pip is blocked;
+    # a venv sidesteps that and the "pip as root" warning.
+    python3 -m venv /opt/venv
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip
+
+    # Real dependencies of the nre package (declared nowhere upstream):
+    #   antspyx -> imported as `ants` (io.py, moco.py)
+    #   numpy   -> arrays (io.py, moco.py, roi.py)
+    #   scikit-learn, scipy -> ROI extraction (roi.py)
+    #   tqdm    -> progress bars (moco.py, the driver)
+    /opt/venv/bin/pip install --no-cache-dir \
+        "antspyx=={{ ANTSPY_VERSION }}" numpy scikit-learn scipy tqdm
+
+    # Upstream `nre/` has no __init__.py; add one so `from nre import ...` works
+    # as a normal package (rather than relying on implicit namespace packages).
+    touch /opt/nre/__init__.py
+
+    # Smoke-check the package imports at build time (no GPU needed).
+    PYTHONPATH=/opt /opt/venv/bin/python3 -c "from nre import io, moco, roi; print('nre import OK')"
+
+%environment
+    export PATH=/opt/venv/bin:$PATH
+    export PYTHONPATH=/opt:$PYTHONPATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    # ANTs/ITK default thread count. The array script overrides this per task to
+    # match --cpus-per-task; 1 is a safe default for ad-hoc `apptainer exec`.
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=${ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS:-1}
+
+%labels
+    Maintainer kylethieringer@gmail.com
+    Description ANTsPy motion correction (nre package) for Hyak
+    ANTsPy_Version {{ ANTSPY_VERSION }}
+    NRE_Source oahmedlab/nifty-roi-extractor
+
+%help
+    Apptainer image for ANTsPy motion correction on Hyak. CPU-only (no --nv).
+    The Ahmed-lab `nre` package is on PYTHONPATH=/opt. Run the driver, e.g.:
+        apptainer exec --bind <repo>,<data> moco.sif \
+            python3 <repo>/scripts/run_moco.py --raw RAW/<exp> --out PROC/<exp>
+    Verify the environment:
+        apptainer exec moco.sif python3 -c "import ants; from nre import io, moco; print(ants.__version__)"

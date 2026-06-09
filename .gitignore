@@ -1,6 +1,9 @@
 # Apptainer images (large, built on the cluster)
 *.sif
 
+# Host-staged clone of the private nre repo (re-cloned by build_moco_sif.sh)
+containers/.nre-src/
+
 # Run artifacts
 logs/
 manifests/
