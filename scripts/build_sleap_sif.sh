@@ -36,13 +36,45 @@ fi
 mkdir -p "$(dirname "$SLEAP_SIF")"
 
 # Apptainer extracts the multi-GB torch/CUDA wheel set into its scratch dir
-# during %post. On Hyak, /tmp is often tmpfs (RAM-backed), so the default
-# TMPDIR fills memory and the build is OOM-killed (exit 137 / "Killed"). Point
-# Apptainer's tmp + cache at disk next to the output .sif unless the caller has
-# already set them. Override by exporting APPTAINER_TMPDIR/APPTAINER_CACHEDIR.
+# during %post and then packs a squashfs -- a thousands-of-small-files workload
+# that crawls on /gscratch (Lustre). A node-local SSD (/scr) is far faster, so
+# prefer one for the build's tmp + cache; the final .sif still lands on
+# $SLEAP_SIF. We only use a candidate if it is writable AND not tmpfs: a
+# RAM-backed /tmp fills memory and the build is OOM-killed (exit 137 /
+# "Killed"). If none qualifies, fall back to scratch next to the output .sif.
+# Overrides: set BUILD_SCRATCH to force a base dir, or APPTAINER_TMPDIR/
+# APPTAINER_CACHEDIR to control the paths outright.
 SIF_DIR="$(dirname "$SLEAP_SIF")"
-export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-$SIF_DIR/.apptainer-build/tmp}"
-export APPTAINER_CACHEDIR="${APPTAINER_CACHEDIR:-$SIF_DIR/.apptainer-build/cache}"
+
+# Echo a writable, non-tmpfs node-local scratch dir, or return non-zero.
+pick_scratch_base() {
+    local cand
+    for cand in "${BUILD_SCRATCH:-}" /scr /scratch /tmp; do
+        [[ -n "$cand" && -d "$cand" ]] || continue
+        case "$(stat -f -c %T "$cand" 2>/dev/null)" in
+            tmpfs|ramfs) continue ;;   # RAM-backed -> OOM risk, skip
+        esac
+        local mine="$cand/$USER/apptainer-build"
+        if mkdir -p "$mine" 2>/dev/null && [[ -w "$mine" ]]; then
+            printf '%s\n' "$mine"
+            return 0
+        fi
+    done
+    return 1
+}
+
+if [[ -n "${APPTAINER_TMPDIR:-}" ]]; then
+    BUILD_SCRATCH_DIR="$(dirname "$APPTAINER_TMPDIR")"   # caller chose; respect it
+elif SCRATCH_BASE="$(pick_scratch_base)"; then
+    BUILD_SCRATCH_DIR="$SCRATCH_BASE"
+    echo "Using node-local build scratch: $BUILD_SCRATCH_DIR"
+else
+    BUILD_SCRATCH_DIR="$SIF_DIR/.apptainer-build"
+    echo "No node-local scratch found; building on $BUILD_SCRATCH_DIR (slower on Lustre)"
+fi
+
+export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-$BUILD_SCRATCH_DIR/tmp}"
+export APPTAINER_CACHEDIR="${APPTAINER_CACHEDIR:-$BUILD_SCRATCH_DIR/cache}"
 # Singularity-named fallbacks in case the runtime is the singularity binary.
 export SINGULARITY_TMPDIR="${SINGULARITY_TMPDIR:-$APPTAINER_TMPDIR}"
 export SINGULARITY_CACHEDIR="${SINGULARITY_CACHEDIR:-$APPTAINER_CACHEDIR}"

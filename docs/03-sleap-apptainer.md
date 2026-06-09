@@ -39,6 +39,19 @@ module load apptainer   # if 'apptainer' isn't already on your PATH
 ./scripts/build_sleap_sif.sh --force   # rebuild even if the .sif exists
 ```
 
+**Or submit it as a batch job** instead of holding an interactive allocation —
+`sbatch` queues the build, runs it on a compute node, and writes the log to a
+file you can check later. Run this from the repo root:
+
+```bash
+sbatch -A psych -p ckpt-all -c 4 --mem 48G -t 04:00:00 \
+    -J build_sleap -o build_sleap-%j.out \
+    --wrap 'module load apptainer; ./scripts/build_sleap_sif.sh'
+
+squeue --me                  # watch it queue/run
+cat build_sleap-<jobid>.out  # build output once it starts
+```
+
 The build downloads a CUDA base image and pip-installs the pinned SLEAP — it can take a while
 and a few GB. The script points Apptainer's scratch (`APPTAINER_TMPDIR`/`APPTAINER_CACHEDIR`)
 at disk next to your `.sif` so wheel extraction doesn't fill a RAM-backed `/tmp`; override those
