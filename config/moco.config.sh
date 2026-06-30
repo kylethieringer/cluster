@@ -26,13 +26,13 @@ ACCOUNT="psych"                      # e.g. "stf" or your lab's account (-A)
 # here or with `export USER_ID=name` before submitting.
 USER_ID="${USER_ID:-$USER}"
 
-PARTITION="ckpt-all"                 # CPU partition. "ckpt-all" = free idle
-                                     # nodes (preemptible). NOTE: motion
-                                     # correction is NOT checkpointed -- a
-                                     # preempted task restarts the whole
-                                     # experiment from scratch. For long runs a
-                                     # dedicated CPU partition (e.g. "compute")
-                                     # is safer; see hyakalloc for options.
+PARTITION="cpu-g2-mem2x"             # CPU partition. Dedicated, NON-preemptible
+                                     # psych allocation (32 cores / 503G) -- moco
+                                     # is NOT checkpointed, so a preempted task
+                                     # restarts the whole experiment from scratch;
+                                     # a dedicated partition avoids that. For
+                                     # throwaway/quick runs "ckpt-all" is the free
+                                     # idle (preemptible) pool. See hyakalloc.
 
 CPUS=8                               # CPU cores per task (-c). ANTs/ITK threads
                                      # are pinned to this in the array script.
@@ -45,7 +45,7 @@ TIME="12:00:00"                      # walltime per experiment (-t), HH:MM:SS.
 
 # When PARTITION is preemptible (ckpt-all), requeue preempted tasks.
 # Set to 1 for ckpt-all, 0 for a dedicated partition.
-REQUEUE=1
+REQUEUE=0
 
 # Cap how many array tasks run at once (SLURM array "%N" throttle).
 # Empty = no cap (let the scheduler decide).
