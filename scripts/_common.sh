@@ -32,12 +32,22 @@ load_config() {
         return 1
     fi
 
-    # Translate + validate. On error config_to_env.py prints "config error: ..."
-    # to stderr and exits non-zero; abort rather than eval a partial env.
-    if ! env_text="$(python3 "$root/scripts/config_to_env.py" "$cfg")"; then
-        return 1
-    fi
-    eval "$env_text"
+    # YAML configs (SLEAP) are translated + validated by config_to_env.py; on
+    # error it prints "config error: ..." to stderr and exits non-zero, so abort
+    # rather than eval a partial env. Bash configs (moco) are still plain shell
+    # and are sourced directly.
+    case "$cfg" in
+        *.yaml|*.yml)
+            if ! env_text="$(python3 "$root/scripts/config_to_env.py" "$cfg")"; then
+                return 1
+            fi
+            eval "$env_text"
+            ;;
+        *)
+            # shellcheck source=/dev/null
+            source "$cfg"
+            ;;
+    esac
     CONFIG_FILE="$cfg"
     export CONFIG_FILE
 }
