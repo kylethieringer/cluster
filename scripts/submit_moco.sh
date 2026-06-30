@@ -100,6 +100,10 @@ sbatch_cmd+=(-o "$LOG_DIR/moco-%A_%a.out" -e "$LOG_DIR/moco-%A_%a.err")
 sbatch_cmd+=("$slurm_script" "$manifest")
 
 # CONFIG_FILE is exported by load_config so the array tasks read the same config.
+# REPO_ROOT lets the array script locate _common.sh: SLURM runs a spooled copy
+# of the script, so it can't derive the repo path from its own location.
+export REPO_ROOT
+REPO_ROOT="$ROOT"
 echo
 echo "sbatch command:"
 printf '  %q' "${sbatch_cmd[@]}"; echo

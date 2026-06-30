@@ -11,7 +11,11 @@
 set -euo pipefail
 
 MANIFEST="${1:?usage: sbatch inference_array.slurm <manifest_file>}"
-source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+# SLURM copies this script into the job spool dir before running it, so
+# ${BASH_SOURCE[0]} does NOT point at the repo. submit_inference.sh exports
+# REPO_ROOT (inherited via sbatch's default --export=ALL) so we can find it.
+: "${REPO_ROOT:?REPO_ROOT not set -- submit via scripts/submit_inference.sh}"
+source "$REPO_ROOT/scripts/_common.sh"
 load_config   # uses $CONFIG_FILE propagated from submit_inference.sh
 
 # --- pick this task's video -------------------------------------------------
