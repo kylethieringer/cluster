@@ -16,7 +16,7 @@ git clone https://github.com/kylethieringer/cluster.git && cd cluster
 # (auth/SSH-key setup: docs/01-getting-started.md §5)
 
 # 1. Configure (account, partition, model paths, video/output dirs, ...)
-$EDITOR config/inference.config.sh
+$EDITOR config/inference.yaml
 
 # 2. Build the SLEAP container image once
 module load apptainer          # if needed
@@ -63,7 +63,7 @@ access to the private `oahmedlab/nifty-roi-extractor` repo (the `nre` package).
 ## Layout
 
 ```
-config/inference.config.sh    # SLEAP: the one file you edit (allocation, model, data paths)
+config/inference.yaml         # SLEAP: the one file you edit (allocation, model, data paths)
 config/moco.config.sh         # motion correction: the one file you edit (CPU alloc, data paths)
 containers/sleap.def          # Apptainer definition for the pinned SLEAP image
 containers/moco.def           # Apptainer definition for the ANTsPy image (bakes in the nre package)

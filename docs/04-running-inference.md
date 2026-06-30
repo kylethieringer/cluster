@@ -19,16 +19,21 @@ your config. Tasks are independent, so they run as fast as the scheduler grants 
 
 ## 1. Configure
 
-Edit [`config/inference.config.sh`](../config/inference.config.sh) (or copy it to
-`config/inference.config.local.sh`, which is git-ignored and takes precedence). Set at minimum:
+Edit [`config/inference.yaml`](../config/inference.yaml) (or copy it to
+`config/inference.local.yaml`, which is git-ignored and takes precedence). Set at minimum:
 
-- `ACCOUNT`, `PARTITION`, `GPU_SPEC`, `MEM`, `TIME` — your allocation and per-job resources.
-- `SLEAP_SIF` — the image from [03-sleap-apptainer.md](03-sleap-apptainer.md).
-- `MODEL_PATHS` — your trained model(s). Top-down = centroid **and** centered-instance; single-
+- `account`, `partition`, `gpu_spec`, `mem`, `time` — your allocation and per-job resources.
+- `models` — your trained model(s). Top-down = centroid **and** centered-instance; single-
   instance/bottom-up = one entry.
-- `DATA_ROOT`, `RAW_DIR`, `VIDEO_GLOB`, `PROCESSED_DIR` — input/output locations. Videos are read
-  from `RAW_DIR/<exptID>/*.mp4`; outputs are written to `PROCESSED_DIR/<exptID>/`.
-- `EXTRA_TRACK_ARGS` — keep `--tracking` to track across frames; clear it for per-frame only.
+- `sleap_sif` — optional. Defaults to `/gscratch/<account>/<user>/sleap_<version>.sif`
+  (the image from [03-sleap-apptainer.md](03-sleap-apptainer.md)); set only to override.
+- `data_root`, `raw_dir`, `video_glob`, `processed_dir` — input/output locations. `data_root`
+  defaults to `/gscratch/scrubbed/<user>/data`. Videos are read from `raw_dir/<exptID>/*.mp4`;
+  outputs are written to `processed_dir/<exptID>/`.
+
+`<user>` defaults to your cluster login (`$USER`), so on your own allocation the paths above
+work untouched. Set `user:` in the config only to point at a different or shared name.
+- `extra_track_args` — keep `--tracking` to track across frames; clear it for per-frame only.
 
 ## 2. Dry run first
 

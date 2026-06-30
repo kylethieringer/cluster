@@ -24,7 +24,7 @@ models contain `best.ckpt` / `training_config.yaml`; legacy TF models have a
 
 ## Build the image
 
-Set `SLEAP_VERSION` and `SLEAP_SIF` in [`config/inference.config.sh`](../config/inference.config.sh),
+Set `sleap_version` and `sleap_sif` in [`config/inference.yaml`](../config/inference.yaml),
 then on the cluster. **Build inside an allocation with ample RAM, not on a login node** — the
 torch + CUDA wheel set is large and a login node's memory cap will get the build OOM-killed:
 
@@ -57,12 +57,14 @@ and a few GB. The script points Apptainer's scratch (`APPTAINER_TMPDIR`/`APPTAIN
 at disk next to your `.sif` so wheel extraction doesn't fill a RAM-backed `/tmp`; override those
 env vars before running if you want a different location (e.g. `/gscratch/psych`).
 
-**Keep `SLEAP_SIF` on scratch, not `$HOME`.** The image is several GB and the build scratch dir
-sits next to it, so a home-quota path will fail with "Disk quota exceeded" partway through. Set it
-once in [`config/inference.config.sh`](../config/inference.config.sh) to a `/gscratch` path, e.g.:
+**Keep `sleap_sif` on scratch, not `$HOME`.** The image is several GB and the build scratch dir
+sits next to it, so a home-quota path will fail with "Disk quota exceeded" partway through. The
+default already lives on scratch — `/gscratch/<account>/<user>/sleap_<version>.sif` — so you
+normally leave it alone. Only override `sleap_sif` in
+[`config/inference.yaml`](../config/inference.yaml) to point at a different `/gscratch` location, e.g.:
 
-```bash
-SLEAP_SIF="${SLEAP_SIF:-/gscratch/psych/<you>/sleap_${SLEAP_VERSION}.sif}"
+```yaml
+sleap_sif: /gscratch/psych/myuser/sleap_1.6.3.sif
 ```
 
 That single setting also relocates the build scratch (`<sif-dir>/.apptainer-build/...`), so you

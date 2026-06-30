@@ -8,7 +8,7 @@
 # this to config/moco.config.local.sh and edit that instead -- the scripts
 # prefer a *.local.sh file if it exists.
 #
-# This is the CPU sibling of config/inference.config.sh (SLEAP). ANTs SyN
+# This is the CPU sibling of config/inference.yaml (SLEAP). ANTs SyN
 # registration is CPU-only, so there is NO GPU request here.
 # =============================================================================
 
@@ -19,6 +19,13 @@
 # See partitions/CPUs with:    sinfo -s        and   hyakalloc
 # Docs: https://hyak.uw.edu/docs/compute/scheduling-jobs
 ACCOUNT="psych"                      # e.g. "stf" or your lab's account (-A)
+
+# Your cluster username, used to build the default /gscratch paths below
+# (MOCO_SIF, DATA_ROOT). Defaults to your login ($USER) -- correct for almost
+# everyone. Override only to point at a different/shared name, either by editing
+# here or with `export USER_ID=name` before submitting.
+USER_ID="${USER_ID:-$USER}"
+
 PARTITION="ckpt-all"                 # CPU partition. "ckpt-all" = free idle
                                      # nodes (preemptible). NOTE: motion
                                      # correction is NOT checkpointed -- a
@@ -63,7 +70,7 @@ NRE_COMMIT="0a1be733b937f054d9ac3416bbd0174128d118f2"
 # Path to the built Apptainer image (see scripts/build_moco_sif.sh). Kept on
 # /gscratch (not $HOME): the image and its build scratch are multi-GB and would
 # blow the tight home quota.
-MOCO_SIF="${MOCO_SIF:-/gscratch/psych/kthier/moco_${ANTSPY_VERSION}.sif}"
+MOCO_SIF="${MOCO_SIF:-/gscratch/$ACCOUNT/$USER_ID/moco_${ANTSPY_VERSION}.sif}"
 
 # -----------------------------------------------------------------------------
 # Processing parameters
@@ -83,7 +90,7 @@ STRUC_GLOB="*channel_1.nii"
 #   PROCESSED_DIR/<exptID>/fixed.nii            (mean/fixed brain)
 #   PROCESSED_DIR/<exptID>/motion_corrected.nii (SyN-corrected functional)
 # (the per-experiment subfolder is mirrored into PROCESSED_DIR).
-DATA_ROOT="/gscratch/scrubbed/kthier/data"   # parent of raw/ and processed/
+DATA_ROOT="/gscratch/scrubbed/$USER_ID/data"   # parent of raw/ and processed/
 RAW_DIR="$DATA_ROOT/raw"                  # one subfolder per experiment
 PROCESSED_DIR="$DATA_ROOT/processed"      # outputs, grouped by experiment
 LOG_DIR="${LOG_DIR:-$PWD/logs}"           # SLURM logs + manifests land here

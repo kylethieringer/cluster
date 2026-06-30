@@ -1,0 +1,90 @@
+# =============================================================================
+# Hyak SLEAP parallel inference -- configuration
+# =============================================================================
+# This is the ONE file you edit. It is read by scripts/submit_inference.sh and
+# re-read inside each SLURM array task. It is plain YAML: "key: value", one per
+# line, and lists are written one item per line with a leading "- ".
+#
+# To keep machine-specific paths out of git, copy this to
+# config/inference.local.yaml and edit that instead -- the scripts prefer a
+# *.local.yaml file if it exists. You can also point at any file with
+#   scripts/submit_inference.sh --config path/to/your.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Allocation (SLURM) -- which account/partition your jobs run under.
+# -----------------------------------------------------------------------------
+# Find your account(s) with:   groups          (lab accounts you belong to)
+# See partitions/GPUs with:    sinfo -s        and   hyakalloc
+# Docs: https://hyak.uw.edu/docs/compute/scheduling-jobs
+account: psych                # e.g. "stf" or your lab's account
+partition: ckpt-all           # GPU partition, e.g. gpu-a100 / gpu-l40s.
+                              # "ckpt-all" = free idle GPUs (preemptible).
+
+# Your cluster username, used to build the default /gscratch paths below
+# (sleap_sif, data_root). Leave commented to auto-detect from $USER -- which is
+# correct for almost everyone. Only set it to point at a different/shared name.
+
+# user: someone_else
+
+gpu_spec: "--gpus=1"          # GPU request, e.g. "--gpus=1" or
+                              # "--gres=gpu:a100:1" to pin a GPU type.
+cpus: 8                       # CPU cores per task
+mem: 32G                      # RAM per task
+time: "04:00:00"              # walltime per video, HH:MM:SS
+
+# When the partition is preemptible (ckpt-all), requeue preempted tasks.
+# true for ckpt-all, false for a dedicated partition.
+requeue: true
+
+# Cap how many array tasks run at once (SLURM array "%N" throttle).
+# Comment out for no cap (let the scheduler decide).
+max_concurrent: 20
+
+# -----------------------------------------------------------------------------
+# SLEAP runtime (Apptainer image + model)
+# -----------------------------------------------------------------------------
+# Pinned SLEAP version baked into the .sif (see containers/sleap.def).
+sleap_version: "1.6.3"
+
+# Path to the built Apptainer image (see scripts/build_sleap_sif.sh). Defaults
+# to /gscratch/<account>/<user>/sleap_<sleap_version>.sif. Uncomment to override.
+# sleap_sif: /gscratch/psych/myuser/sleap_1.6.3.sif
+
+# Trained model(s) -- set these to YOUR model paths. For a top-down model, list
+# BOTH the centroid and the centered-instance model. For single-instance/bottom-
+# up, list just one. Each entry may be a model directory, a best.ckpt, or a
+# training_config.yaml.
+models:
+  - /gscratch/psych/kthier/models/260603_111049.centroid.n=515
+  - /gscratch/psych/kthier/models/260603_112642.multi_class_topdown.n=515
+
+# Inference device passed to sleap-nn (cuda, cuda:0, cpu, ...).
+device: cuda
+
+# Inference subcommand. Default is the modern PyTorch CLI. The exact CLI has
+# shifted across SLEAP 1.6.x -- override if your pinned version differs
+# (e.g. "sleap-track" for legacy-style invocation inside the container).
+track_subcmd: "sleap-nn track"
+
+# Extra args appended verbatim to the inference command. Put tracking and any
+# tracker tuning here. Set to "" to disable tracking.
+extra_track_args: "--tracking"
+
+# -----------------------------------------------------------------------------
+# Data layout -- where videos come from and where outputs go.
+# -----------------------------------------------------------------------------
+# Experiments live one folder deep: each has its own subdirectory holding its
+# video(s). Inputs are read from   raw_dir/<exptID>/*.mp4   and the prediction
+# for each video is written to     processed_dir/<exptID>/<video>.predictions.slp
+# (the per-experiment subfolder is mirrored into processed_dir).
+# data_root defaults to /gscratch/scrubbed/<user>/data (parent of raw/ and
+# processed/). Uncomment to override:
+# data_root: /gscratch/scrubbed/myuser/data
+video_glob: "*.mp4"                          # which files to treat as videos
+# raw_dir / processed_dir default to data_root/raw and data_root/processed.
+# Uncomment to override:
+# raw_dir: /gscratch/scrubbed/myuser/data/raw
+# processed_dir: /gscratch/scrubbed/myuser/data/processed
+# log_dir defaults to ./logs at submit time. Uncomment to override:
+# log_dir: /gscratch/scrubbed/myuser/logs

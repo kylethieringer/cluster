@@ -50,7 +50,7 @@ Common GPU partitions on Klone include `gpu-a100` and `gpu-l40s`; `ckpt-all` run
 for free but jobs can be **preempted** (interrupted and requeued). Scheduling docs:
 <https://hyak.uw.edu/docs/compute/scheduling-jobs>.
 
-Put the account and partition you choose into [`config/inference.config.sh`](../config/inference.config.sh).
+Put the account and partition you choose into [`config/inference.yaml`](../config/inference.yaml).
 
 ## 5. Get this repo onto the cluster
 

@@ -96,9 +96,15 @@ minimum:
 - `ACCOUNT`, `PARTITION`, `CPUS`, `MEM`, `TIME` — your allocation and per-job
   resources. **No GPU.** `MEM` should be generous (default `64G`): the worker
   holds the full functional volume plus a same-size output copy in RAM.
-- `MOCO_SIF` — the image you just built.
-- `DATA_ROOT`, `RAW_DIR`, `PROCESSED_DIR` — input/output locations. Volumes are
-  read from `RAW_DIR/<exptID>/*.nii`; outputs go to `PROCESSED_DIR/<exptID>/`.
+- `MOCO_SIF` — optional. Defaults to `/gscratch/$ACCOUNT/$USER_ID/moco_<version>.sif`
+  (the image you just built); set only to override.
+- `DATA_ROOT`, `RAW_DIR`, `PROCESSED_DIR` — input/output locations. `DATA_ROOT`
+  defaults to `/gscratch/scrubbed/$USER_ID/data`. Volumes are read from
+  `RAW_DIR/<exptID>/*.nii`; outputs go to `PROCESSED_DIR/<exptID>/`.
+
+`USER_ID` defaults to your cluster login (`$USER`), so the paths above work
+untouched on your own allocation. Override it (edit the file or `export USER_ID=name`)
+only to point at a different or shared name.
 - `FIXED_VOLUMES`, `FUNC_GLOB`, `STRUC_GLOB` — fixed-brain averaging window and
   which `.nii` is the functional (vs. single-channel fallback) volume.
 

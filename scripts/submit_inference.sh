@@ -5,7 +5,7 @@
 #   scripts/submit_inference.sh [--dry-run] [--config FILE] [--force]
 #
 #   --dry-run    Build the manifest and print the sbatch command without submitting.
-#   --config F   Use config file F (default: config/inference.config[.local].sh).
+#   --config F   Use config file F (default: config/inference[.local].yaml).
 #   --force      Include videos even if their output .slp already exists.
 #
 # Reads everything else from the config file. Run from a Hyak login node.
