@@ -75,7 +75,7 @@ MOCO_SIF="${MOCO_SIF:-/gscratch/$ACCOUNT/$USER_ID/moco_${ANTSPY_VERSION}.sif}"
 # -----------------------------------------------------------------------------
 # Processing parameters
 # -----------------------------------------------------------------------------
-# Number of leading volumes averaged into the fixed/mean brain (moco.generate_fixed).
+# Number of leading volumes averaged into the fixed/mean brain (in run_moco.py).
 FIXED_VOLUMES=300
 # Which .nii in an experiment folder is the functional channel (preferred) and,
 # as a fallback when only one channel was recorded, the structural channel.

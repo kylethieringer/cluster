@@ -22,6 +22,9 @@ import glob
 import os
 import sys
 
+import ants
+import numpy as np
+
 from nre import io, moco
 
 
@@ -64,28 +67,45 @@ def main() -> int:
     func_channel = find_functional(args.raw, args.func_glob, args.struc_glob)
     print(f"functional channel: {func_channel}")
 
-    # Build the fixed/mean brain. The structural reference is the functional
-    # channel itself (matches the lab driver). Load, average, free before the
-    # full motion-correction load to keep the memory peak down.
-    print(f"loading volume for fixed brain (first {args.fixed_volumes} volumes)")
-    struc_data = io.load(func_channel)
-    mean_brain, fixed_brain = moco.generate_fixed(struc_data, args.fixed_volumes)
-    del struc_data
-    gc.collect()
+    # io.load returns a numpy array (ants.image_read(...).numpy()). A functional
+    # recording is 4D with time as the LAST axis (x, y, z, t) -- ANTs preserves
+    # the NIfTI dim order. Treat a 3D volume as a single timepoint.
+    data = io.load(func_channel)
+    if data.ndim == 3:
+        data = data[..., np.newaxis]
+    if data.ndim != 4:
+        raise ValueError(f"expected a 3D or 4D volume, got shape {data.shape}")
+    n_vols = data.shape[-1]
+    print(f"loaded {func_channel}: shape {data.shape} ({n_vols} volumes)")
+
+    # Build the fixed/mean brain by averaging the leading volumes over the time
+    # axis. nre.moco no longer provides this (it only exposes apply()), so do it
+    # here. Clamp the window to the number of volumes actually present.
+    n_fixed = min(args.fixed_volumes, n_vols)
+    fixed_np = data[..., :n_fixed].mean(axis=-1)
+    print(f"built fixed brain from first {n_fixed} volume(s)")
 
     fixed_nii = os.path.join(args.out, "fixed.nii")
-    io.save(fixed_nii, mean_brain)
+    io.save(fixed_nii, fixed_np)
     print(f"wrote {fixed_nii}")
 
-    # Motion-correct every volume against the fixed brain.
-    print("loading functional volume for motion correction")
-    func_data = io.load(func_channel)
-    print("running motion correction (SyN, per volume)")
-    moco_func_brain = moco.motion_correction(func_data, fixed_brain)
-    del func_data
+    # Motion-correct every volume against the fixed brain. nre.moco.apply wraps
+    # ants.registration (SyN), so it works on ANTs images, not numpy: convert
+    # each volume in, take the warped result back out as numpy. The output is a
+    # full second copy of the stack -- this is the memory peak the docs warn of.
+    fixed_img = ants.from_numpy(fixed_np)
+    corrected = np.empty_like(data)
+    print(f"running motion correction (SyN, per volume) over {n_vols} volumes")
+    for t in range(n_vols):
+        moving_img = ants.from_numpy(data[..., t])
+        corrected[..., t] = moco.apply(fixed_img, moving_img).numpy()
+        if (t + 1) % 50 == 0 or t + 1 == n_vols:
+            print(f"  motion-corrected {t + 1}/{n_vols} volumes", flush=True)
+
+    del data
     gc.collect()
 
-    io.save(out_nii, moco_func_brain)
+    io.save(out_nii, corrected)
     print(f"wrote {out_nii}")
     return 0
 
