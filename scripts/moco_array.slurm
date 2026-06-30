@@ -49,6 +49,12 @@ ROOT="$(repo_root)"
 export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS="${SLURM_CPUS_PER_TASK:-$CPUS}"
 export APPTAINERENV_ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS="$ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"
 
+# Create the output dir on the HOST, where gscratch is writable. This is what
+# makes PROCESSED_DIR exist so the bind loop below mounts it read-write -- if we
+# left run_moco.py to mkdir it inside the read-only container image, the write
+# fails with "Errno 30 Read-only file system".
+mkdir -p "$EXP_OUT"
+
 # Bind the repo (for run_moco.py) and the data tree into the container. gscratch
 # is usually auto-mounted, but bind explicitly to be safe. CPU-only -> no --nv.
 bind_dirs=("$ROOT" "$RAW_DIR" "$PROCESSED_DIR")
